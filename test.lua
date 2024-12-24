@@ -15,4 +15,7 @@ satm:set_token(subatomic_token)
 local keys = satm:keys()
 print(inspect(keys))
 
+local key = satm:get_key(keys[1].id)
+print(inspect(key))
+
 

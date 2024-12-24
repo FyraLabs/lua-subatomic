@@ -1,4 +1,4 @@
----@diagnostic disable: missing-parameter
+---@diagnostic disable: missing-parameter, need-check-nil
 
 local request = require("http.request")
 local json = require("json")
@@ -11,16 +11,6 @@ Subatomic = {
     token = nil,
     server_url = "https://subatomic.fyralabs.com",
 }
-
--- local function build_client(path, method, body)
---     local client = request.new_from_uri(satm.server_url .. path)
---     client.headers:upsert(":method", method or "GET")
---     if
---     client.headers:upsert("Authorization", "Bearer " .. satm.token)
-
---     -- print(json)
---     return client
--- end
 
 function Subatomic:set_token(token)
     if not token or token == "" then
@@ -149,6 +139,41 @@ function Subatomic:remove_repo(repo_id)
     end
 end
 
+--- Set a GPG key for a repository
+--- @param repo_id string The repository ID
+--- @param key_id string The GPG key ID
+function Subatomic:set_repo_key(repo_id, key_id)
+    if not repo_id or repo_id == "" then
+        error("Repository ID is required")
+    end
+    if not key_id or key_id == "" then
+        error("Key ID is required")
+    end
+
+    local res = self:request("/repos/" .. repo_id .. "/key", "PUT", json.encode({ id = key_id }))
+
+    if res.headers:get(":status") == "204" then
+        return true
+    else
+        return res:json()
+    end
+end
+
+--- Delete the repository from the server
+--- @param api satm The Subatomic API client
+--- @return boolean|table error message or response
+function Repository:delete(api)
+    return api:remove_repo(self.id)
+end
+
+--- Set a GPG key for the repository
+--- @param api satm The Subatomic API client
+--- @param key_id string The GPG key ID
+--- @return boolean|table error message or response
+function Repository:set_key(api, key_id)
+    return api:set_repo_key(self.id, key_id)
+end
+
 --- Remove an RPM from a repository
 --- @param repo_id string The repository ID
 --- @param rpm_spec string The RPM spec to remove
@@ -171,7 +196,6 @@ function Subatomic:remove_rpm(repo_id, rpm_spec)
     end
 end
 
-
 --- GPG Key
 --- @class GPGKey
 --- @field id string The GPG key ID
@@ -192,6 +216,40 @@ function Subatomic:keys()
         keys[i] = setmetatable(key, { __index = GPGKey })
     end
     return keys
+end
+
+--- Get a GPG key by ID
+--- @param key_id any
+--- @return GPGKey|nil
+function Subatomic:get_key(key_id)
+    local res = self:request("/keys/" .. key_id)
+    local key = res:json()
+    return setmetatable(key, { __index = GPGKey })
+end
+
+--- Create a new GPG key
+--- @param id string The GPG key ID
+--- @param email string The GPG key email
+--- @param name string The GPG key name
+--- @return boolean|table error message or response
+function Subatomic:create_key(id, email, name)
+    if not id or id == "" then
+        error("GPG key ID is required")
+    end
+    if not email or email == "" then
+        error("GPG key email is required")
+    end
+    if not name or name == "" then
+        error("GPG key name is required")
+    end
+
+    local res = self:request("/keys", "POST", json.encode({ id = id, email = email, name = name }))
+
+    if res.headers:get(":status") == "201" then
+        return true
+    else
+        return res:json()
+    end
 end
 
 return Subatomic

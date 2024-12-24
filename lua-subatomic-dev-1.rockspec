@@ -1,7 +1,7 @@
 package = "lua-subatomic"
 version = "dev-1"
 source = {
-   url = "https://github.com/fyralabs/lua-subatomic.git",
+   url = "git+https://github.com/FyraLabs/lua-subatomic.git"
 }
 description = {
    summary = "This repository contains the Lua bindings for the Subatomic REST API so you can create Subatomic management scripts in Lua.",
